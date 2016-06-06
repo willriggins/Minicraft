@@ -9,16 +9,13 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Vector2;
-
-import java.util.Random;
 
 public class MyGdxGame extends ApplicationAdapter {
 	SpriteBatch batch;
 
 	TextureRegion up, down, left, right, upFlipped, downFlipped, right2, left2;
 	TextureRegion upZ, downZ, leftZ, rightZ, upFlippedZ, downFlippedZ, right2Z, left2Z;
-	TextureRegion background, heart, greyHeart;
+	TextureRegion background, heart, greyHeart, tree;
 	boolean faceUp = true, faceDown, faceRight, faceLeft;
 	Animation walkUp, walkDown, walkRight, walkLeft;
 	Animation walkUpZ, walkDownZ, walkRightZ, walkLeftZ;
@@ -62,6 +59,11 @@ public class MyGdxGame extends ApplicationAdapter {
 		left2 = new TextureRegion(right2);
 		left2.flip(true, false);
 
+		upFlipped = new TextureRegion(up);
+		upFlipped.flip(true, false);
+		downFlipped = new TextureRegion(down);
+		downFlipped.flip(true, false);
+
 		//zombie definitions
 
 		downZ = grid[6][4];
@@ -73,35 +75,18 @@ public class MyGdxGame extends ApplicationAdapter {
 		left2Z = new TextureRegion(right2Z);
 		left2Z.flip(true, false);
 
+		upFlippedZ = new TextureRegion(upZ);
+		upFlippedZ.flip(true, false);
+		downFlippedZ = new TextureRegion(downZ);
+		downFlippedZ.flip(true, false);
 
 		// get background tile
-
-		TextureRegion[][] backgroundRegion = TextureRegion.split(tiles, 24, 8);
+		TextureRegion[][] backgroundRegion = TextureRegion.split(tiles, 8, 8);
 		background = backgroundRegion[0][0];
 
 		TextureRegion[][] hud = TextureRegion.split(tiles, 8, 8);
 		heart = hud[0][10];
 		greyHeart = hud[0][8];
-
-
-
-
-		//player
-
-		upFlipped = new TextureRegion(up);
-		upFlipped.flip(true, false);
-
-		downFlipped = new TextureRegion(down);
-		downFlipped.flip(true, false);
-
-		//zombie
-
-		upFlippedZ = new TextureRegion(upZ);
-		upFlippedZ.flip(true, false);
-
-		downFlippedZ = new TextureRegion(downZ);
-		downFlippedZ.flip(true, false);
-
 
 		//animate player
 		walkUp = new Animation (0.2f, up, upFlipped);
@@ -115,8 +100,9 @@ public class MyGdxGame extends ApplicationAdapter {
 		walkRightZ = new Animation(0.2f, rightZ, right2Z);
 		walkLeftZ = new Animation(0.2f, leftZ, left2Z);
 
-
-
+		//get tree - bad find, couldn't isolate tree so it pulled in some grass from tileset
+		TextureRegion[][] findTree = TextureRegion.split(tiles, 18, 24);
+		tree = findTree[0][0];
 	}
 
 	@Override
@@ -124,13 +110,14 @@ public class MyGdxGame extends ApplicationAdapter {
 		move();
 		moveZ();
 		keepInBounds();
+		zombieLoop();
 
 		time += Gdx.graphics.getDeltaTime();
 
 		Gdx.gl.glClearColor(0, 0, 0, 0);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-		// animate walking
+		// set up player's conditions for animation
 
 		TextureRegion upward;
 		if (yv > 0) {
@@ -164,10 +151,7 @@ public class MyGdxGame extends ApplicationAdapter {
 			leftward = left2;
 		}
 
-
 		batch.begin();
-
-
 
 		// draw background
 
@@ -202,15 +186,6 @@ public class MyGdxGame extends ApplicationAdapter {
 			batch.draw(upward, x, y, WIDTH * 3, HEIGHT * 3);
 		}
 
-		if (zx > 800) {
-			zx = 750;
-			direction = 4;
-		}
-
-		if (zx < 0) {
-			zx = 5;
-			direction = 2;
-		}
 		// draw zombie
 
 		if (direction == 1) {
@@ -225,9 +200,6 @@ public class MyGdxGame extends ApplicationAdapter {
 		else if (direction == 4) {
 			batch.draw(walkLeftZ.getKeyFrame(time, true), zx, zy, WIDTH * 3, HEIGHT * 3);
 		}
-//		else {
-//			batch.draw(walkRightZ.getKeyFrame(time, true), zx, zy, WIDTH * 3, HEIGHT * 3);
-//		}
 
 
 		// draw hud
@@ -241,10 +213,15 @@ public class MyGdxGame extends ApplicationAdapter {
 		batch.draw(heart, 700, 550, 50, 50);
 		batch.draw(heart, 750, 550, 50, 50);
 
+
+		//testing collision with player and zombie.. not very functional
+
 		if (zx == x && zy == y) {
 			status = 2;
 		}
 
+		//play sound if units collide.. (rough)
+		//press 1 to make units touch, tho this still isn't 100%. have to spam it to get units to collide.
 		if (Gdx.input.isKeyPressed(Input.Keys.NUM_1)) {
 			Sound sound = Gdx.audio.newSound(Gdx.files.internal("playerhurt.wav"));
 			sound.play(1.0f);
@@ -252,6 +229,8 @@ public class MyGdxGame extends ApplicationAdapter {
 			zy = y;
 		}
 
+		//draw tree
+		batch.draw(tree, 400, 300, 100, 100);
 		batch.end();
 	}
 
@@ -368,4 +347,24 @@ public class MyGdxGame extends ApplicationAdapter {
 
 	}
 
+	public void zombieLoop() {
+		if (zx > 750) {
+			zx = 750;
+			direction = 1;
+		}
+
+		if (zy > 475) {
+			zy = 475;
+			direction = 4;
+		}
+
+		if (zx < 20) {
+			zx = 20;
+			direction = 3;
+		}
+		if (zy < 5) {
+			zy = 5;
+			direction = 2;
+		}
+	}
 }
